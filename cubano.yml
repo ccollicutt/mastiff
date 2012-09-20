@@ -1,0 +1,19 @@
+---
+# this is an exmple yml file to build some kind of multi-tier system
+# a breed of mastiff
+cubano:
+  database:
+    - instances: 1
+    # ubuntu 12.04 64
+    - image: b4156018-c766-4f20-a3cc-fa5a8c421f4d
+    - flavor: 1
+    - playbook: /home/curtis/ansible_playbooks/db.yml
+    - key_name: vcl
+  application:
+    - instances: 2
+    # Debian squeeze 64
+    - flavor: 1
+    - image: 3923d241-4939-46e8-a124-2d9ada357770
+#    - playbook: /home/curtis/ansible_playbooks/app.yml
+#   - key_name: vcl
+
