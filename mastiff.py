@@ -4,12 +4,7 @@ import re
 import sys
 import os, os.path
 import ConfigParser
-
-try:
-    from Cheetah.Template import Template
-except ImportError:
-    print >>sys.stderr, 'ERROR: requires Cheetah templates'
-    sys.exit(1)
+from novaclient.v1_1 import client
 
 try:
     import argparse
@@ -17,9 +12,24 @@ except ImportError:
     print >>sys.stderr, 'ERROR: requires argparse'
     sys.exit(1)
 
-CONFIG_FILE = "./mastiff.conf"
-TEMPLATE="./mastiff.tpl"
+try:
+    from IPython.frontend.terminal.embed import InteractiveShellEmbed
+    ipshell = InteractiveShellEmbed.instance()
+except ImportError:
+    print >>sys.stderr, 'ERROR: requires IPython'
+    sys.exit(1)
 
+try:
+    import ansible.runner
+except ImportError:
+    print >>sys.stderr, 'ERROR: requires ansible'
+    sys.exit(1)
+
+CONFIG_FILE = "./mastiff.conf"
+
+#
+# MAIN
+# 
 def main(args):
     
     # Much of the argparse/configparser parts taken from 
@@ -80,9 +90,11 @@ def main(args):
     #)
 
     parser.add_argument(
-        "--hello", 
-        dest="hello", 
-        help="Who are you saying hello to?"
+        "--shell", 
+        help="Start an interactive IPython shell",
+        action="store_true",
+        dest="SHELL",
+        default=False
     )
 
     #
@@ -95,11 +107,30 @@ def main(args):
     # Makes args into a dictionary to feed to searchList
     d = args.__dict__
 
-    # Create template object
-    # - the searchList=[d] is the best!
-    t = Template(file=TEMPLATE, searchList=[d])
+    try:
+        OS_USERNAME = os.environ['OS_USERNAME']
+        OS_TENANT_NAME = os.environ['OS_TENANT_NAME']
+        OS_PASSWORD = os.environ['OS_PASSWORD']
+        OS_AUTH_URL = os.environ['OS_AUTH_URL']
+    except:
+        print >>sys.stderr, "ERROR: Openstack environment variables username, tenant name, password, and auth url must be set"
+        sys.exit(1)
 
-    print(t.respond())
+    # Connect to nova
+    nova = client.Client(OS_USERNAME, OS_PASSWORD, OS_TENANT_NAME, OS_AUTH_URL, service_type="compute")
+
+    # XXX FIXME: Must be a better way to test the connection...
+    try:
+        nova.servers.list()
+    except:
+        print >>sys.stderr, "ERROR: Could not connect to OpenStack via nova python client"
+        sys.exit(1)
+
+    if args.SHELL:
+        #ipython_shell(nova)
+        ipshell=InteractiveShellEmbed()
+        ipshell()
+   
     sys.exit(0)
     
 if __name__ == '__main__':
