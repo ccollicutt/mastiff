@@ -111,10 +111,18 @@ def main(args):
 
     parser.add_argument(
         "--breed", 
-        help="Set what group of servers to build from the config file",
+        help="Set the breed to load from the breed file",
         action="store",
         dest="BREED",
     )
+
+    parser.add_argument(
+        "--breed-file", 
+        help="The file that contains all of the breeds",
+        action="store",
+        dest="BREEDFILE",
+    )
+
 
     #
     # Done with arguments
@@ -136,34 +144,38 @@ def main(args):
         sys.exit(1)
 
     # Connect to nova
-    nova = client.Client(OS_USERNAME, OS_PASSWORD, OS_TENANT_NAME, OS_AUTH_URL, service_type="compute")
+    nova_compute = client.Client(OS_USERNAME, OS_PASSWORD, OS_TENANT_NAME, OS_AUTH_URL, service_type="compute")
+    nova_volume = client.Client(OS_USERNAME, OS_PASSWORD, OS_TENANT_NAME, OS_AUTH_URL, service_type="volume")
 
     # XXX FIXME: Must be a better way to test the connection...
     try:
-        nova.servers.list()
+        nova_volume.volumes.list()
+        nova_compute.servers.list()
     except:
         print >>sys.stderr, "ERROR: Could not connect to OpenStack via nova python client"
         sys.exit(1)
 
    
-    if args.BREED:
+    if args.BREED and args.BREEDFILE:
         BREED = args.BREED
+        BREEDFILE = args.BREEDFILE
     else:
        # nothing to do
        sys.exit(0)
 
     try:
-        stream = open(BREED + ".yml", 'r')
+        stream = open(BREEDFILE, 'r')
     except:
-        print >>sys.stderr, "ERROR: Failed to open " + BREED + ".yml"
+        print >>sys.stderr, "ERROR: Failed to open " + BREEDFILE
         sys.exit(1)  
 
     try:
         breed =  yaml.load(stream)
     except:
-        print >>sys.stderr, "ERROR: " + BREED + ".yml is not a valid yaml file"
+        print >>sys.stderr, "ERROR: " + BREEDFILE + " is not a valid yaml file"
         sys.exit(1) 
 
+    # If we asked for a shell, open one
     if args.SHELL:
         #ipython_shell(nova)
         ipshell=InteractiveShellEmbed()
@@ -171,11 +183,16 @@ def main(args):
         print "Exiting IPython shell..."
         sys.exit(0)
 
+    # Grab the breed we are looking for from the command line
+    # the idea being there could be several breeds in one config file
+    # maybe
     instances = breed[str(BREED)]
     servers = []
 
+    # Step through the instance information from the yaml file and boot a bunch of servers
     for i, k in instances.iteritems():
         for item in k:
+            # grab each required variable if it's there
             if 'instances' in item:
                 num_instances = item['instances']
             elif 'image' in item:
@@ -184,17 +201,17 @@ def main(args):
                 playbook = item['playbook']
             elif 'flavor' in item:
                 flavor = item['flavor']
-            else:
-                flavor = "1"
+        
+        if flavor is None:
+            flavor = 1
 
         # Don't forget flavor XXX
         if num_instances is not None and image is not None:
             for j in range(int(num_instances)):
-                server = nova.servers.create(flavor=flavor,image=image,name=str(BREED) + ' ' + str(i) + ' ' + str(j))
+                name = str(BREED) + ' ' + str(i) + ' ' + str(j)
+                server = nova_compute.servers.create(flavor=flavor,image=image,name=name)
                 if server:
                     servers.append(server)
-        else:
-            print "no num_instances and image"
 
     for server in servers:
         print server.id

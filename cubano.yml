@@ -11,9 +11,15 @@ cubano:
     - key_name: vcl
   application:
     - instances: 2
-    # Debian squeeze 64
     - flavor: 1
+    # Debian squeeze 64
     - image: 3923d241-4939-46e8-a124-2d9ada357770
 #    - playbook: /home/curtis/ansible_playbooks/app.yml
 #   - key_name: vcl
-
+fio:
+  fio:
+  - instances: 2
+  # CentOS 6 x86_64
+  - flavor: 2
+  - image: eafd18a8-fdf4-4e6d-9a91-a2a90580f58e
+  - playbook: /home/curtis/ansible_playbooks/mastiff/fio.yml
