@@ -18,8 +18,21 @@ cubano:
 #   - key_name: vcl
 fio:
   fio:
-  - instances: 2
-  # CentOS 6 x86_64
-  - flavor: 2
-  - image: eafd18a8-fdf4-4e6d-9a91-a2a90580f58e
-  - playbook: /home/curtis/ansible_playbooks/mastiff/fio.yml
+    - instances: 2
+    # CentOS 6 x86_64
+    - flavor: 2
+    - image: eafd18a8-fdf4-4e6d-9a91-a2a90580f58e
+    - playbook: /home/curtis/ansible_playbooks/mastiff/fio.yml
+
+iperf:
+  iperf_server:
+    - instances: 1
+    - flavor: 2
+    - image: eafd18a8-fdf4-4e6d-9a91-a2a90580f58e
+    - playbook: /home/curtis/ansible_playbooks/mastiff/iperf_server.yml
+
+  iperf_client:
+    - instances: 1
+    - flavor: 2
+    - image: eafd18a8-fdf4-4e6d-9a91-a2a90580f58e
+    - playbook: /home/curtis/ansible_playbooks/mastiff/iperf_client.yml
