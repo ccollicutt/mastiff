@@ -19,7 +19,6 @@ except ImportError:
 
 try:
     from IPython.frontend.terminal.embed import InteractiveShellEmbed
-    ipshell = InteractiveShellEmbed.instance()
 except ImportError:
     print >>sys.stderr, 'ERROR: requires IPython'
     sys.exit(1)
@@ -145,6 +144,7 @@ def main(args):
 
     # Connect to nova
     nova_compute = client.Client(OS_USERNAME, OS_PASSWORD, OS_TENANT_NAME, OS_AUTH_URL, service_type="compute")
+    # I don't know if we actually need volumes, but perhaps eventually...at least it's here now
     nova_volume = client.Client(OS_USERNAME, OS_PASSWORD, OS_TENANT_NAME, OS_AUTH_URL, service_type="volume")
 
     # XXX FIXME: Must be a better way to test the connection...
@@ -155,20 +155,36 @@ def main(args):
         print >>sys.stderr, "ERROR: Could not connect to OpenStack via nova python client"
         sys.exit(1)
 
-   
+    #
+    # Default variables
+    #
+    try:
+        WAIT = args.wait
+        TRIES = args.tries
+    except:
+        WAIT = 2
+        TRIES = 200
+        print "NOTICE: A required variable was not set"
+
+
+    # Set breed and breedfile variables 
+    # XXX - should see if shell is set too
     if args.BREED and args.BREEDFILE:
         BREED = args.BREED
         BREEDFILE = args.BREEDFILE
     else:
-       # nothing to do
-       sys.exit(0)
+        # nothing to do
+        print "NOTICE: neither breed file or breed set so nothing to do"
+        sys.exit(0)
 
+    # open the breedfile
     try:
         stream = open(BREEDFILE, 'r')
     except:
         print >>sys.stderr, "ERROR: Failed to open " + BREEDFILE
         sys.exit(1)  
 
+    # load the breedfile
     try:
         breed =  yaml.load(stream)
     except:
@@ -176,9 +192,15 @@ def main(args):
         sys.exit(1) 
 
     # If we asked for a shell, open one
+    # NOTE: Not going to go any farther than this
     if args.SHELL:
         #ipython_shell(nova)
-        ipshell=InteractiveShellEmbed()
+        ipshell = InteractiveShellEmbed()
+        ipshell.confirm_exit = False
+        ipshell.banner = ""
+        ipshell.prompt_manager.in_template = r'mastiff# '
+        ipshell.prompt_manager.in2_template = r'{color.Green}|{color.LightGreen}\D{color.Green}> '
+        ipshell.prompt_manager.out_template = r'<\#> '
         ipshell()
         print "Exiting IPython shell..."
         sys.exit(0)
@@ -213,8 +235,13 @@ def main(args):
                 if server:
                     servers.append(server)
 
-    for server in servers:
-        print server.id
+    #servers_up = False
+    #while servers_up = False:
+    #    for server in servers:
+    #        if server.status == "ACTIVE":
+                # try to get the IP address
+
+
 
     sys.exit(0)
     
